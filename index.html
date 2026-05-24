@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinansialKu – Pencatatan Keuangan Pribadi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ============ LOGIN PAGE ============ -->
+<div id="page-login" class="page active">
+  <div class="login-bg">
+    <div class="login-orb orb1"></div>
+    <div class="login-orb orb2"></div>
+    <div class="login-orb orb3"></div>
+  </div>
+  <div class="login-container">
+    <div class="login-brand">
+      <div class="brand-icon">₹</div>
+      <h1 class="brand-name">FinansialKu</h1>
+      <p class="brand-tagline">Pencatatan Keuangan Pribadi</p>
+    </div>
+    <div class="login-card">
+      <h2>Selamat Datang</h2>
+      <p class="login-sub">Masuk untuk mengelola keuangan Anda</p>
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="login-user" placeholder="Masukkan username" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="input-pw-wrap">
+          <input type="password" id="login-pass" placeholder="Masukkan password" autocomplete="current-password">
+          <button class="pw-toggle" onclick="togglePassword()" type="button">
+            <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="login-error" class="login-error hidden">⚠ Username atau password salah.</div>
+      <button class="btn-primary btn-login" id="btn-login" onclick="doLogin()">
+        <span>Masuk</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+      <p class="login-hint">Demo: <code>admin</code> / <code>admin123</code> &nbsp;|&nbsp; <code>user</code> / <code>user123</code></p>
+    </div>
+    <div class="login-footer">
+      <span>Sang Petualang Corp</span> · <span>Beta 0526.1</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MAIN APP ============ -->
+<div id="page-app" class="page hidden">
+
+  <!-- SIDEBAR OVERLAY (mobile) -->
+  <div class="sidebar-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon sm">₹</div>
+      <span>FinansialKu</span>
+      <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="nav-avatar">A</div>
+      <div class="user-info">
+        <div class="user-name" id="nav-username">Admin</div>
+        <div class="user-role" id="nav-role">Administrator</div>
+      </div>
+    </div>
+    <ul class="nav-menu">
+      <li class="nav-item" id="nav-dashboard" onclick="showPage('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>Dashboard</span>
+      </li>
+      <li class="nav-item admin-only" id="nav-pemasukan" onclick="showPage('pemasukan')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        <span>Pendapatan</span>
+        <span class="nav-badge">Admin</span>
+      </li>
+      <li class="nav-item" id="nav-pengeluaran" onclick="showPage('pengeluaran')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        <span>Pengeluaran</span>
+      </li>
+      <li class="nav-item" id="nav-laporan" onclick="showPage('laporan')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>Laporan</span>
+      </li>
+      <li class="nav-item admin-only" id="nav-setting" onclick="showPage('setting')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <span>Pengaturan</span>
+      </li>
+      <li class="nav-item" id="nav-about" onclick="showPage('about')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <span>Tentang</span>
+      </li>
+    </ul>
+    <button class="btn-logout" onclick="doLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      Keluar
+    </button>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-wrap" id="main-wrap">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-right">
+        <div class="refresh-status" id="refresh-status" title="Status auto-refresh">
+          <svg class="refresh-icon" id="refresh-spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+          <span id="refresh-countdown"></span>
+        </div>
+        <button class="btn-icon-top" onclick="manualRefresh()" title="Refresh Sekarang">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+        </button>
+        <div class="topbar-date" id="topbar-date"></div>
+      </div>
+    </header>
+
+    <!-- ===== DASHBOARD ===== -->
+    <section id="section-dashboard" class="section hidden">
+      <div class="section-header">
+        <div><h2>Dashboard</h2><p id="dash-greeting">Selamat datang!</p></div>
+        <div class="dash-month-pick">
+          <input type="month" id="dash-filter-month" onchange="renderDashboard()" class="filter-input">
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="kpi-card kpi-green">
+          <div class="kpi-header"><span class="kpi-label">Pendapatan Bulan Ini</span><div class="kpi-ico green">↑</div></div>
+          <div class="kpi-value" id="kpi-masuk">Rp 0</div>
+          <div class="kpi-sub" id="kpi-masuk-count">0 transaksi</div>
+        </div>
+        <div class="kpi-card kpi-red">
+          <div class="kpi-header"><span class="kpi-label">Pengeluaran Bulan Ini</span><div class="kpi-ico red">↓</div></div>
+          <div class="kpi-value" id="kpi-keluar">Rp 0</div>
+          <div class="kpi-sub" id="kpi-keluar-count">0 transaksi</div>
+        </div>
+        <div class="kpi-card" id="kpi-saldo-card">
+          <div class="kpi-header"><span class="kpi-label">Saldo Bersih</span><div class="kpi-ico" id="kpi-saldo-ico">≈</div></div>
+          <div class="kpi-value" id="kpi-saldo">Rp 0</div>
+          <div class="kpi-sub" id="kpi-saldo-pct"></div>
+        </div>
+        <div class="kpi-card kpi-blue">
+          <div class="kpi-header"><span class="kpi-label">Rata-rata / Hari</span><div class="kpi-ico blue">⌀</div></div>
+          <div class="kpi-value" id="kpi-avg">Rp 0</div>
+          <div class="kpi-sub">pengeluaran harian</div>
+        </div>
+      </div>
+      <div id="dash-saldo-warning" class="saldo-warning hidden">⚠️ <strong>Peringatan!</strong> Saldo bulan ini minus. Pengeluaran melebihi pendapatan!</div>
+
+      <!-- Charts -->
+      <div class="dash-charts">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3>Tren 6 Bulan Terakhir</h3>
+          </div>
+          <div class="chart-body"><canvas id="chart-trend"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <h3>Pengeluaran per Kategori</h3>
+            <span id="dash-chart-period" class="chart-period-label"></span>
+          </div>
+          <div class="chart-body chart-donut-wrap"><canvas id="chart-kategori"></canvas><div class="donut-center" id="donut-center"></div></div>
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="card" style="margin-top:1.5rem">
+        <div class="card-header"><h3>Transaksi Terbaru</h3><button class="btn-ghost btn-sm" onclick="showPage('pengeluaran')">Lihat Semua</button></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Tanggal</th><th>Tipe</th><th>Kategori</th><th>Keterangan</th><th class="text-right">Jumlah</th></tr></thead>
+            <tbody id="tbody-recent"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PENDAPATAN ===== -->
+    <section id="section-pemasukan" class="section hidden">
+      <div class="section-header">
+        <div><h2>Pendapatan</h2><p>Kelola semua sumber pemasukan Anda</p></div>
+        <button class="btn-primary" onclick="openModal('modal-add-pemasukan')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Tambah Pendapatan
+        </button>
+      </div>
+      <div class="summary-grid">
+        <div class="sum-card green"><div class="sum-icon">↑</div><div><div class="sum-label">Total Pendapatan</div><div class="sum-value" id="total-pendapatan">Rp 0</div></div></div>
+        <div class="sum-card red"><div class="sum-icon">↓</div><div><div class="sum-label">Total Pengeluaran</div><div class="sum-value" id="total-pengeluaran-sum">Rp 0</div></div></div>
+        <div class="sum-card" id="saldo-card"><div class="sum-icon" id="saldo-icon">≈</div><div><div class="sum-label">Saldo Bersih</div><div class="sum-value" id="saldo-bersih">Rp 0</div></div></div>
+      </div>
+      <div id="saldo-warning" class="saldo-warning hidden">⚠️ <strong>Peringatan!</strong> Saldo Anda minus. Pengeluaran melebihi pendapatan!</div>
+      <div class="table-toolbar">
+        <div class="filter-group">
+          <input type="month" id="filter-pemasukan-month" onchange="renderPemasukanTable()" class="filter-input">
+          <button class="btn-ghost btn-sm" onclick="clearFilter('filter-pemasukan-month', renderPemasukanTable)">Reset</button>
+        </div>
+        <div class="export-group">
+          <button class="btn-export" onclick="exportData('pemasukan','excel')">⬇ Excel</button>
+          <button class="btn-export" onclick="exportData('pemasukan','csv')">⬇ CSV</button>
+          <button class="btn-export" onclick="exportData('pemasukan','pdf')">⬇ PDF</button>
+          <button class="btn-export" onclick="printData('pemasukan')">🖨 Print</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Data Pendapatan</h3><button class="btn-ghost btn-sm" onclick="openModal('modal-manage-kategori-masuk')">⚙ Kelola Kategori</button></div>
+        <div class="table-wrap">
+          <table class="data-table" id="table-pemasukan">
+            <thead><tr><th>Tanggal</th><th>Kategori</th><th>Keterangan</th><th class="text-right">Jumlah</th><th>Aksi</th></tr></thead>
+            <tbody id="tbody-pemasukan"><tr><td colspan="5" class="empty-row">Belum ada data pendapatan</td></tr></tbody>
+          </table>
+        </div>
+        <div class="table-footer-total" id="total-row-pemasukan"></div>
+      </div>
+    </section>
+
+    <!-- ===== PENGELUARAN ===== -->
+    <section id="section-pengeluaran" class="section hidden">
+      <div class="section-header">
+        <div><h2>Pengeluaran</h2><p>Catat semua pengeluaran harian Anda</p></div>
+        <button class="btn-primary" onclick="openModal('modal-add-pengeluaran')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Tambah Pengeluaran
+        </button>
+      </div>
+      <div class="summary-grid">
+        <div class="sum-card red"><div class="sum-icon">↓</div><div><div class="sum-label">Total Bulan Ini</div><div class="sum-value" id="pengeluaran-bulan-ini">Rp 0</div></div></div>
+        <div class="sum-card amber"><div class="sum-icon">📋</div><div><div class="sum-label">Jumlah Transaksi</div><div class="sum-value" id="pengeluaran-count">0</div></div></div>
+        <div class="sum-card blue"><div class="sum-icon">⌀</div><div><div class="sum-label">Rata-rata / Hari</div><div class="sum-value" id="pengeluaran-avg">Rp 0</div></div></div>
+      </div>
+      <div class="table-toolbar">
+        <div class="filter-group">
+          <input type="month" id="filter-pengeluaran-month" onchange="renderPengeluaranTable()" class="filter-input">
+          <select id="filter-pengeluaran-kat" onchange="renderPengeluaranTable()" class="filter-input styled-select" style="width:auto">
+            <option value="">Semua Kategori</option>
+          </select>
+          <button class="btn-ghost btn-sm" onclick="resetFilterPengeluaran()">Reset</button>
+        </div>
+        <div class="export-group">
+          <button class="btn-export" onclick="exportData('pengeluaran','excel')">⬇ Excel</button>
+          <button class="btn-export" onclick="exportData('pengeluaran','csv')">⬇ CSV</button>
+          <button class="btn-export" onclick="exportData('pengeluaran','pdf')">⬇ PDF</button>
+          <button class="btn-export" onclick="printData('pengeluaran')">🖨 Print</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Data Pengeluaran</h3><button class="btn-ghost btn-sm" onclick="openModal('modal-manage-kategori-keluar')">⚙ Kelola Kategori</button></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Tanggal</th><th>Kategori</th><th>Keterangan</th><th class="text-right">Jumlah</th><th>Nota</th><th>Aksi</th></tr></thead>
+            <tbody id="tbody-pengeluaran"><tr><td colspan="6" class="empty-row">Belum ada data pengeluaran</td></tr></tbody>
+          </table>
+        </div>
+        <div class="table-footer-total" id="total-row-pengeluaran"></div>
+      </div>
+    </section>
+
+    <!-- ===== LAPORAN ===== -->
+    <section id="section-laporan" class="section hidden">
+      <div class="section-header"><div><h2>Laporan Keuangan</h2><p>Analisis mendalam keuangan Anda</p></div></div>
+      <div class="laporan-tabs" id="laporan-tabs">
+        <button class="tab-btn active" data-tab="pengeluaran-lap" onclick="switchLaporan(this,'pengeluaran-lap')">📉 Pengeluaran</button>
+        <button class="tab-btn admin-only" data-tab="pendapatan-lap" onclick="switchLaporan(this,'pendapatan-lap')">📈 Pendapatan</button>
+        <button class="tab-btn admin-only" data-tab="gabungan-lap" onclick="switchLaporan(this,'gabungan-lap')">📊 Gabungan</button>
+      </div>
+
+      <!-- Pengeluaran Lap -->
+      <div id="lap-pengeluaran-lap" class="lap-content active">
+        <div class="table-toolbar">
+          <div class="filter-group">
+            <select id="lap-type-keluar" onchange="renderLaporan('pengeluaran-lap')" class="filter-input styled-select">
+              <option value="harian">Harian</option><option value="bulanan" selected>Bulanan</option><option value="tahunan">Tahunan</option>
+            </select>
+            <input type="date" id="lap-date-keluar" onchange="renderLaporan('pengeluaran-lap')" class="filter-input" style="display:none">
+            <input type="month" id="lap-month-keluar" onchange="renderLaporan('pengeluaran-lap')" class="filter-input">
+            <input type="number" id="lap-year-keluar" placeholder="Tahun" min="2020" max="2099" onchange="renderLaporan('pengeluaran-lap')" class="filter-input" style="width:80px;display:none">
+          </div>
+          <div class="export-group">
+            <button class="btn-export" onclick="exportLaporan('pengeluaran-lap','excel')">⬇ Excel</button>
+            <button class="btn-export" onclick="exportLaporan('pengeluaran-lap','csv')">⬇ CSV</button>
+            <button class="btn-export" onclick="exportLaporan('pengeluaran-lap','pdf')">⬇ PDF</button>
+            <button class="btn-export" onclick="printLaporan('pengeluaran-lap')">🖨 Print</button>
+          </div>
+        </div>
+        <div class="lap-charts-row">
+          <div class="chart-card sm"><div class="chart-card-header"><h3>Distribusi Kategori</h3></div><div class="chart-body"><canvas id="lap-chart-kat-keluar"></canvas></div></div>
+        </div>
+        <div class="card"><h3 class="card-inner-title">Laporan Pengeluaran</h3>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>Tanggal</th><th>Kategori</th><th>Keterangan</th><th class="text-right">Jumlah</th></tr></thead><tbody id="tbody-lap-keluar"></tbody></table></div>
+          <div class="lap-total" id="lap-total-keluar"></div>
+        </div>
+      </div>
+
+      <!-- Pendapatan Lap -->
+      <div id="lap-pendapatan-lap" class="lap-content hidden">
+        <div class="table-toolbar">
+          <div class="filter-group">
+            <select id="lap-type-masuk" onchange="renderLaporan('pendapatan-lap')" class="filter-input styled-select">
+              <option value="harian">Harian</option><option value="bulanan" selected>Bulanan</option><option value="tahunan">Tahunan</option>
+            </select>
+            <input type="date" id="lap-date-masuk" onchange="renderLaporan('pendapatan-lap')" class="filter-input" style="display:none">
+            <input type="month" id="lap-month-masuk" onchange="renderLaporan('pendapatan-lap')" class="filter-input">
+            <input type="number" id="lap-year-masuk" placeholder="Tahun" min="2020" max="2099" onchange="renderLaporan('pendapatan-lap')" class="filter-input" style="width:80px;display:none">
+          </div>
+          <div class="export-group">
+            <button class="btn-export" onclick="exportLaporan('pendapatan-lap','excel')">⬇ Excel</button>
+            <button class="btn-export" onclick="exportLaporan('pendapatan-lap','csv')">⬇ CSV</button>
+            <button class="btn-export" onclick="exportLaporan('pendapatan-lap','pdf')">⬇ PDF</button>
+            <button class="btn-export" onclick="printLaporan('pendapatan-lap')">🖨 Print</button>
+          </div>
+        </div>
+        <div class="card"><h3 class="card-inner-title">Laporan Pendapatan</h3>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>Tanggal</th><th>Kategori</th><th>Keterangan</th><th class="text-right">Jumlah</th></tr></thead><tbody id="tbody-lap-masuk"></tbody></table></div>
+          <div class="lap-total" id="lap-total-masuk"></div>
+        </div>
+      </div>
+
+      <!-- Gabungan Lap -->
+      <div id="lap-gabungan-lap" class="lap-content hidden">
+        <div class="table-toolbar">
+          <div class="filter-group">
+            <select id="lap-type-gab" onchange="renderLaporan('gabungan-lap')" class="filter-input styled-select">
+              <option value="harian">Harian</option><option value="bulanan" selected>Bulanan</option><option value="tahunan">Tahunan</option>
+            </select>
+            <input type="date" id="lap-date-gab" onchange="renderLaporan('gabungan-lap')" class="filter-input" style="display:none">
+            <input type="month" id="lap-month-gab" onchange="renderLaporan('gabungan-lap')" class="filter-input">
+            <input type="number" id="lap-year-gab" placeholder="Tahun" min="2020" max="2099" onchange="renderLaporan('gabungan-lap')" class="filter-input" style="width:80px;display:none">
+          </div>
+          <div class="export-group">
+            <button class="btn-export" onclick="exportLaporan('gabungan-lap','excel')">⬇ Excel</button>
+            <button class="btn-export" onclick="exportLaporan('gabungan-lap','csv')">⬇ CSV</button>
+            <button class="btn-export" onclick="exportLaporan('gabungan-lap','pdf')">⬇ PDF</button>
+            <button class="btn-export" onclick="printLaporan('gabungan-lap')">🖨 Print</button>
+          </div>
+        </div>
+        <div class="card"><h3 class="card-inner-title">Laporan Gabungan Pendapatan & Pengeluaran</h3>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>Tanggal</th><th>Tipe</th><th>Kategori</th><th>Keterangan</th><th class="text-right">Jumlah</th></tr></thead><tbody id="tbody-lap-gab"></tbody></table></div>
+          <div class="lap-total" id="lap-total-gab"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SETTING ===== -->
+    <section id="section-setting" class="section hidden admin-only">
+      <div class="section-header">
+        <div><h2>Pengaturan</h2><p>Kelola pengguna dan konfigurasi sistem</p></div>
+        <button class="btn-primary" onclick="openModal('modal-add-user')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Tambah Pengguna
+        </button>
+      </div>
+
+      <!-- User table -->
+      <div class="card">
+        <div class="card-header"><h3>👥 Daftar Pengguna</h3></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Username</th><th>Nama Lengkap</th><th>Role</th><th>Aksi</th></tr></thead>
+            <tbody id="tbody-users"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Google Integration Config -->
+      <div class="card" style="margin-top:1.5rem">
+        <div class="card-header"><h3>🔗 Integrasi Google</h3></div>
+        <div class="config-body">
+          <p class="config-desc">Hubungkan aplikasi ke Google Spreadsheet sebagai database dan Google Drive untuk penyimpanan nota/dokumen. Lihat <strong>PANDUAN_INSTALASI.md</strong> untuk instruksi lengkap.</p>
+          <div class="config-grid">
+            <div class="form-group">
+              <label>Google Apps Script URL (Web App)</label>
+              <input type="text" id="cfg-script-url" placeholder="https://script.google.com/macros/s/xxx/exec" class="config-input">
+              <span class="field-hint">Dapatkan URL ini setelah deploy Code.gs sebagai Web App</span>
+            </div>
+            <div class="form-group">
+              <label>Google Spreadsheet ID</label>
+              <input type="text" id="cfg-sheet-id" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" class="config-input">
+              <span class="field-hint">ID dari URL spreadsheet Anda</span>
+            </div>
+            <div class="form-group">
+              <label>Google Drive Folder ID (Nota)</label>
+              <input type="text" id="cfg-drive-id" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" class="config-input">
+              <span class="field-hint">ID folder Drive untuk menyimpan nota</span>
+            </div>
+          </div>
+          <div class="config-actions">
+            <button class="btn-primary" onclick="saveConfig()">💾 Simpan Konfigurasi</button>
+            <button class="btn-ghost" onclick="testConnection()">🔌 Test Koneksi</button>
+          </div>
+          <div id="conn-status" class="conn-status hidden"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ABOUT ===== -->
+    <section id="section-about" class="section hidden">
+      <div class="about-wrap">
+        <div class="about-card">
+          <div class="about-icon">₹</div>
+          <h1 class="about-appname">FinansialKu</h1>
+          <p class="about-desc">Aplikasi Pencatatan Pendapatan dan Pengeluaran Pribadi</p>
+          <div class="about-badge">Beta 0526.1</div>
+          <div class="about-divider"></div>
+          <div class="about-company">
+            <div class="company-logo">⛺</div>
+            <div class="company-name">Sang Petualang Corp</div>
+            <p class="company-tagline">Berpetualang bersama teknologi menuju kebebasan finansial</p>
+          </div>
+          <div class="about-divider"></div>
+          <div class="about-features">
+            <div class="feat-item"><span>✓</span> Pencatatan Pendapatan &amp; Pengeluaran</div>
+            <div class="feat-item"><span>✓</span> Dashboard Visual dengan Grafik</div>
+            <div class="feat-item"><span>✓</span> Integrasi Google Spreadsheet (Database)</div>
+            <div class="feat-item"><span>✓</span> Upload Nota ke Google Drive</div>
+            <div class="feat-item"><span>✓</span> Export Excel, CSV, PDF &amp; Print</div>
+            <div class="feat-item"><span>✓</span> Multi-user dengan Role Admin &amp; User</div>
+            <div class="feat-item"><span>✓</span> Laporan Harian, Bulanan, Tahunan</div>
+            <div class="feat-item"><span>✓</span> Responsive – PC &amp; Smartphone</div>
+            <div class="feat-item"><span>✓</span> Auto-refresh setelah idle 10 detik</div>
+          </div>
+          <div class="about-tech">
+            <span>HTML5</span><span>CSS3</span><span>JavaScript</span><span>Chart.js</span><span>Google Apps Script</span>
+          </div>
+          <p class="about-copy">© 2026 Sang Petualang Corp. All rights reserved.</p>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- end main-wrap -->
+</div><!-- end page-app -->
+
+<!-- ====== MODALS ====== -->
+
+<!-- Add Pemasukan -->
+<div class="modal-overlay hidden" id="modal-add-pemasukan">
+  <div class="modal">
+    <div class="modal-header"><h3 id="modal-masuk-title">Tambah Pendapatan</h3><button onclick="closeModal('modal-add-pemasukan')" class="modal-close">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-masuk-id">
+      <div class="form-row-2">
+        <div class="form-group">
+          <label>Tanggal <span class="req">*</span></label>
+          <input type="text" id="in-masuk-tanggal" placeholder="YYYY-MM-DD" onfocus="showDatePicker(this)" class="date-input" readonly>
+          <div class="cal-wrap hidden" id="cal-in-masuk-tanggal"></div>
+        </div>
+        <div class="form-group">
+          <label>Kategori <span class="req">*</span></label>
+          <select id="in-masuk-kategori" class="styled-select"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Keterangan</label>
+        <input type="text" id="in-masuk-keterangan" placeholder="Keterangan (opsional)">
+      </div>
+      <div class="form-group">
+        <label>Jumlah (Rp) <span class="req">*</span></label>
+        <div class="amount-input-wrap">
+          <span class="amount-prefix">Rp</span>
+          <input type="text" id="in-masuk-jumlah" placeholder="0" class="amount-input" oninput="formatAmountInput(this)" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('modal-add-pemasukan')">Batal</button>
+      <button class="btn-primary" onclick="savePemasukan()">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Pengeluaran -->
+<div class="modal-overlay hidden" id="modal-add-pengeluaran">
+  <div class="modal">
+    <div class="modal-header"><h3 id="modal-keluar-title">Tambah Pengeluaran</h3><button onclick="closeModal('modal-add-pengeluaran')" class="modal-close">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-keluar-id">
+      <div class="form-row-2">
+        <div class="form-group">
+          <label>Tanggal <span class="req">*</span></label>
+          <input type="text" id="in-keluar-tanggal" placeholder="YYYY-MM-DD" onfocus="showDatePicker(this)" class="date-input" readonly>
+          <div class="cal-wrap hidden" id="cal-in-keluar-tanggal"></div>
+        </div>
+        <div class="form-group">
+          <label>Kategori <span class="req">*</span></label>
+          <select id="in-keluar-kategori" class="styled-select"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Keterangan</label>
+        <input type="text" id="in-keluar-keterangan" placeholder="Keterangan (opsional)">
+      </div>
+      <div class="form-group">
+        <label>Jumlah (Rp) <span class="req">*</span></label>
+        <div class="amount-input-wrap">
+          <span class="amount-prefix">Rp</span>
+          <input type="text" id="in-keluar-jumlah" placeholder="0" class="amount-input" oninput="formatAmountInput(this)" inputmode="numeric">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Upload Nota <span class="field-hint-inline">(Gambar / PDF / Dokumen, maks 10MB)</span></label>
+        <div class="upload-zone" id="upload-zone"
+          onclick="document.getElementById('in-keluar-nota').click()"
+          ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          <p>Klik atau <strong>seret file</strong> ke sini</p>
+          <span>JPG, PNG, PDF, DOCX</span>
+        </div>
+        <input type="file" id="in-keluar-nota" accept="image/*,.pdf,.doc,.docx" style="display:none" onchange="handleFileSelect(this)">
+        <div id="nota-preview" class="nota-preview hidden"></div>
+        <p class="upload-note">📌 File disimpan ke Google Drive jika konfigurasi sudah terhubung, atau disimpan lokal.</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('modal-add-pengeluaran')">Batal</button>
+      <button class="btn-primary" onclick="savePengeluaran()">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Kategori Masuk -->
+<div class="modal-overlay hidden" id="modal-manage-kategori-masuk">
+  <div class="modal">
+    <div class="modal-header"><h3>Kelola Kategori Pendapatan</h3><button onclick="closeModal('modal-manage-kategori-masuk')" class="modal-close">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><input type="text" id="new-kategori-masuk" placeholder="Nama kategori baru" onkeydown="if(event.key==='Enter')addKategori('masuk')"><button class="btn-primary btn-sm" onclick="addKategori('masuk')">+ Tambah</button></div>
+      <ul class="kategori-list" id="list-kategori-masuk"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Kategori Keluar -->
+<div class="modal-overlay hidden" id="modal-manage-kategori-keluar">
+  <div class="modal">
+    <div class="modal-header"><h3>Kelola Kategori Pengeluaran</h3><button onclick="closeModal('modal-manage-kategori-keluar')" class="modal-close">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><input type="text" id="new-kategori-keluar" placeholder="Nama kategori baru" onkeydown="if(event.key==='Enter')addKategori('keluar')"><button class="btn-primary btn-sm" onclick="addKategori('keluar')">+ Tambah</button></div>
+      <ul class="kategori-list" id="list-kategori-keluar"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- Add User -->
+<div class="modal-overlay hidden" id="modal-add-user">
+  <div class="modal">
+    <div class="modal-header"><h3>Tambah Pengguna</h3><button onclick="closeModal('modal-add-user')" class="modal-close">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row-2">
+        <div class="form-group"><label>Username <span class="req">*</span></label><input type="text" id="new-user-username" placeholder="username"></div>
+        <div class="form-group"><label>Nama Lengkap</label><input type="text" id="new-user-fullname" placeholder="Nama lengkap"></div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group"><label>Password <span class="req">*</span></label><input type="password" id="new-user-pass" placeholder="Password"></div>
+        <div class="form-group"><label>Role</label><select id="new-user-role" class="styled-select"><option value="user">User</option><option value="admin">Admin</option></select></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn-ghost" onclick="closeModal('modal-add-user')">Batal</button><button class="btn-primary" onclick="addUser()">💾 Simpan</button></div>
+  </div>
+</div>
+
+<!-- Reset Password -->
+<div class="modal-overlay hidden" id="modal-reset-pass">
+  <div class="modal">
+    <div class="modal-header"><h3>Reset Password</h3><button onclick="closeModal('modal-reset-pass')" class="modal-close">✕</button></div>
+    <div class="modal-body">
+      <p style="margin-bottom:1rem;color:var(--text-muted)">Reset password untuk user: <strong id="reset-target-user" style="color:var(--text)"></strong></p>
+      <div class="form-group"><label>Password Baru <span class="req">*</span></label><input type="password" id="reset-new-pass" placeholder="Password baru"></div>
+    </div>
+    <div class="modal-footer"><button class="btn-ghost" onclick="closeModal('modal-reset-pass')">Batal</button><button class="btn-primary" onclick="doResetPassword()">Reset Password</button></div>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div class="modal-overlay hidden" id="modal-confirm">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header"><h3 id="confirm-title">Konfirmasi</h3><button onclick="closeModal('modal-confirm')" class="modal-close">✕</button></div>
+    <div class="modal-body"><p id="confirm-msg" style="color:var(--text-muted)"></p></div>
+    <div class="modal-footer"><button class="btn-ghost" onclick="closeModal('modal-confirm')">Batal</button><button class="btn-danger-solid" id="confirm-ok-btn" onclick="confirmOk()">Ya, Hapus</button></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
